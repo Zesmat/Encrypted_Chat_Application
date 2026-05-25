@@ -2,10 +2,8 @@
 #  theme.py — WhatsApp Dark Theme Color Palette
 # =============================================
 
-BG_DARK = "#0b141a"           # Main background
-BG_CHAT = "#0b141a"           # Chat area background
-BG_HEADER = "#1f2c34"         # Top header bar
-BG_INPUT_BAR = "#1f2c34"      # Bottom input bar
+BG_DARK = "#0b141a"           # Main / chat background
+BG_HEADER = "#1f2c34"         # Header & input bar
 BG_INPUT_FIELD = "#2a3942"    # Text input field
 BG_SENT = "#005c4b"           # Sent message bubble
 BG_RECEIVED = "#202c33"       # Received message bubble

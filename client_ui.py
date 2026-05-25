@@ -13,7 +13,6 @@ from chat_widgets import ChatHeader, ChatArea, InputBar, DebugPanel
 from crypto import (
     generate_rsa_keypair, generate_aes_key,
     aes_encrypt, aes_decrypt,
-    rsa_encrypt, rsa_decrypt,
     wrap_aes_key, unwrap_aes_key,
 )
 
@@ -30,7 +29,6 @@ class SecureChatApp:
         self.my_rsa_public, self.my_rsa_private = generate_rsa_keypair()
         self.session_aes_key = generate_aes_key()
 
-        self.debug_visible = True
         self._build_layout()
 
         # --- Initial debug log ---
@@ -62,14 +60,12 @@ class SecureChatApp:
     # ==========================================
 
     def toggle_debugger(self):
-        if self.debug_visible:
+        if self.debug_panel.is_visible():
             self.debug_panel.hide()
             self.header.set_debugger_off()
-            self.debug_visible = False
         else:
             self.debug_panel.show()
             self.header.set_debugger_on()
-            self.debug_visible = True
 
     # ==========================================
     #  Messaging — Encryption → Send → Receive → Decrypt

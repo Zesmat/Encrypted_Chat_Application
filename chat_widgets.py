@@ -8,10 +8,9 @@
 
 import tkinter as tk
 from tkinter import scrolledtext
-from datetime import datetime
 
 from theme import (
-    BG_DARK, BG_CHAT, BG_HEADER, BG_INPUT_BAR, BG_INPUT_FIELD,
+    BG_DARK, BG_HEADER, BG_INPUT_FIELD,
     BG_SENT, BG_RECEIVED, FG_PRIMARY, FG_SECONDARY, FG_INPUT,
     ACCENT_GREEN, BG_DEBUG_PANEL, FG_DEBUG, BG_DATE_SEP, FG_CHECK,
     BG_DEBUG_CONSOLE,
@@ -74,10 +73,10 @@ class ChatArea:
     """Scrollable message area with WhatsApp-style bubbles."""
 
     def __init__(self, parent):
-        self._area = tk.Frame(parent, bg=BG_CHAT)
+        self._area = tk.Frame(parent, bg=BG_DARK)
         self._area.pack(fill=tk.BOTH, expand=True)
 
-        self.canvas = tk.Canvas(self._area, bg=BG_CHAT, highlightthickness=0)
+        self.canvas = tk.Canvas(self._area, bg=BG_DARK, highlightthickness=0)
         scrollbar = tk.Scrollbar(self._area, orient=tk.VERTICAL,
                                  command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=scrollbar.set)
@@ -85,7 +84,7 @@ class ChatArea:
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
-        self.messages_frame = tk.Frame(self.canvas, bg=BG_CHAT)
+        self.messages_frame = tk.Frame(self.canvas, bg=BG_DARK)
         self._win_id = self.canvas.create_window(
             (0, 0), window=self.messages_frame, anchor="nw"
         )
@@ -101,7 +100,7 @@ class ChatArea:
 
     def add_date_separator(self, text):
         """Centered date pill (e.g. 'Today', 'Yesterday')."""
-        sep = tk.Frame(self.messages_frame, bg=BG_CHAT)
+        sep = tk.Frame(self.messages_frame, bg=BG_DARK)
         sep.pack(fill=tk.X, pady=8)
         tk.Label(sep, text=text, font=("Segoe UI", 9),
                  fg=FG_SECONDARY, bg=BG_DATE_SEP,
@@ -112,7 +111,7 @@ class ChatArea:
         bubble_bg = BG_SENT if is_sent else BG_RECEIVED
         pad = (80, 12) if is_sent else (12, 80)
 
-        wrapper = tk.Frame(self.messages_frame, bg=BG_CHAT)
+        wrapper = tk.Frame(self.messages_frame, bg=BG_DARK)
         wrapper.pack(fill=tk.X, padx=pad, pady=2)
 
         bubble = tk.Frame(wrapper, bg=bubble_bg, padx=10, pady=6)
@@ -136,11 +135,14 @@ class ChatArea:
 
     def _scroll_to_bottom(self):
         self.messages_frame.update_idletasks()
-        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+        self._update_scroll_region()
         self.canvas.yview_moveto(1.0)
 
-    def _on_frame_cfg(self, _event):
+    def _update_scroll_region(self):
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+    def _on_frame_cfg(self, _event):
+        self._update_scroll_region()
 
     def _on_canvas_cfg(self, event):
         self.canvas.itemconfig(self._win_id, width=event.width)
@@ -155,18 +157,18 @@ class InputBar:
     PLACEHOLDER = "Type a message"
 
     def __init__(self, parent, on_send):
-        self.frame = tk.Frame(parent, bg=BG_INPUT_BAR, height=56)
+        self.frame = tk.Frame(parent, bg=BG_HEADER, height=56)
         self.frame.pack(fill=tk.X, side=tk.BOTTOM)
         self.frame.pack_propagate(False)
 
         # Emoji
         tk.Label(self.frame, text="😊", font=("Segoe UI Emoji", 16),
-                 fg=FG_SECONDARY, bg=BG_INPUT_BAR,
+                 fg=FG_SECONDARY, bg=BG_HEADER,
                  cursor="hand2").pack(side=tk.LEFT, padx=(12, 6), pady=10)
 
         # Attachment
         tk.Label(self.frame, text="📎", font=("Segoe UI Emoji", 16),
-                 fg=FG_SECONDARY, bg=BG_INPUT_BAR,
+                 fg=FG_SECONDARY, bg=BG_HEADER,
                  cursor="hand2").pack(side=tk.LEFT, padx=(0, 8), pady=10)
 
         # Text entry
@@ -185,7 +187,7 @@ class InputBar:
 
         # Mic
         tk.Label(self.frame, text="🎙", font=("Segoe UI Emoji", 16),
-                 fg=FG_SECONDARY, bg=BG_INPUT_BAR,
+                 fg=FG_SECONDARY, bg=BG_HEADER,
                  cursor="hand2").pack(side=tk.RIGHT, padx=(8, 12), pady=10)
 
     # ---- public API ----
