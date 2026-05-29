@@ -58,6 +58,8 @@ class SecureChatApp:
             threading.Thread(target=self._listen_for_messages, daemon=True).start()
         except Exception as err:
             self.debug_panel.log("🔴 [NETWORK ERROR] Could not connect", str(err))
+            self.debug_panel.log("🔄 [NETWORK] Retrying in 3 seconds...", "")
+            self.root.after(3000, self._connect_to_server)
 
     def _send_socket_data(self, data_dict):
         if self.client_socket:
@@ -90,6 +92,15 @@ class SecureChatApp:
         if msg_type == "pubkey":
             self.remote_rsa_public = (msg["e"], msg["n"])
             self.debug_panel.log("🔑 [SYSTEM] Received Remote Public Key", f"e={msg['e']}, n={msg['n']}")
+            
+            # Reply back with our key so the sender gets it
+            e, n = self.my_rsa_public
+            self._send_socket_data({"type": "pubkey_reply", "e": e, "n": n})
+            
+        elif msg_type == "pubkey_reply":
+            self.remote_rsa_public = (msg["e"], msg["n"])
+            self.debug_panel.log("🔑 [SYSTEM] Received Remote Public Key (Reply)", f"e={msg['e']}, n={msg['n']}")
+            
         elif msg_type == "message":
             envelope = msg.get("envelope")
             self._handle_incoming_message(envelope)
