@@ -442,19 +442,22 @@ def aes_rounds_dec(block):
     
 def aes_rounds_enc(block):
     for i in range(9):
+        # Substitute bytes
         block = bytes([sub_byte(b) for b in block])
 
+        # Shift rows
         block = bytearray(block)
         block[1], block[5], block[9], block[13] = block[5], block[9], block[13], block[1]
         block[2], block[6], block[10], block[14] = block[10], block[14], block[2], block[6]
         block[3], block[7], block[11], block[15] = block[15], block[3], block[7], block[11]
 
+        # Mix columns
         block = mix_columns_enc(block)
         block = bytearray(block)
         
+        # Add round key
         round_key = round_keys[i]
         rk = []
-
         for word in round_key:
             rk.extend([
             (word >> 24) & 0xff,
@@ -470,6 +473,7 @@ def aes_rounds_enc(block):
 
 
 def final_round_enc(block):
+
     block = bytes([sub_byte(b) for b in block])
     
     block = bytearray(block)
