@@ -3,8 +3,7 @@
 # =============================================
 #  Handles: crypto pipeline, send/receive, and wiring
 #  All UI widget construction lives in chat_widgets.py
-#  Crypto: rsa.py (Member 1), aes.py (Member 2),
-#          hybrid_system.py (Member 3), encoding.py (Member 3)
+#  Crypto: rsa.py, aes.py, hybrid_system.py, encoding.py
 
 import tkinter as tk
 from datetime import datetime
@@ -26,15 +25,9 @@ class SecureChatApp:
         self.debug_panel = None  # will be set in _build_layout
         self._build_layout()
 
-        self.debug_panel.log("Generating RSA keypair (512-bit)...", "Please wait")
-        self.root.update_idletasks()
-
         self.my_rsa_public, self.my_rsa_private = generate_rsa_keypair(bits=512)
-
-        # --- Initial debug log ---
-        self.debug_panel.log("System Initialized.", "Keys generated.")
         e, n = self.my_rsa_public
-        self.debug_panel.log("RSA Public Key", f"e={e}, n={n}")
+        self.debug_panel.log("🔑 [SYSTEM] RSA Keypair Generated", f"e={e}, n={n}")
 
     # ==========================================
     #  Layout Assembly
