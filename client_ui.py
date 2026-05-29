@@ -3,18 +3,15 @@
 # =============================================
 #  Handles: crypto pipeline, send/receive, and wiring
 #  All UI widget construction lives in chat_widgets.py
-#  All crypto algorithms live in crypto.py
+#  Crypto: rsa.py (Member 1), aes.py (Member 2),
+#          hybrid_system.py (Member 3), encoding.py (Member 3)
 
 import tkinter as tk
 from datetime import datetime
 
 from theme import BG_DARK
 from chat_widgets import ChatHeader, ChatArea, InputBar, DebugPanel
-from crypto import (
-    generate_rsa_keypair, generate_aes_key,
-    aes_encrypt, aes_decrypt,
-    wrap_aes_key, unwrap_aes_key,
-)
+from hybrid_system import generate_rsa_keypair, hybrid_encrypt, hybrid_decrypt
 
 
 class SecureChatApp:
@@ -25,16 +22,19 @@ class SecureChatApp:
         self.root.configure(bg=BG_DARK)
         self.root.minsize(600, 400)
 
-        # --- Cryptography Setup (dummy until real implementations arrive) ---
-        self.my_rsa_public, self.my_rsa_private = generate_rsa_keypair()
-        self.session_aes_key = generate_aes_key()
-
+        # --- Cryptography Setup ---
+        self.debug_panel = None  # will be set in _build_layout
         self._build_layout()
+
+        self.debug_panel.log("Generating RSA keypair (512-bit)...", "Please wait")
+        self.root.update_idletasks()
+
+        self.my_rsa_public, self.my_rsa_private = generate_rsa_keypair(bits=512)
 
         # --- Initial debug log ---
         self.debug_panel.log("System Initialized.", "Keys generated.")
-        self.debug_panel.log(f"RSA Public Key: {self.my_rsa_public}")
-        self.debug_panel.log(f"AES Session Key: {self.session_aes_key}")
+        e, n = self.my_rsa_public
+        self.debug_panel.log("RSA Public Key", f"e={e}, n={n}")
 
     # ==========================================
     #  Layout Assembly
@@ -68,7 +68,7 @@ class SecureChatApp:
             self.header.set_debugger_on()
 
     # ==========================================
-    #  Messaging — Encryption → Send → Receive → Decrypt
+    #  Messaging — Hybrid Encrypt → Send → Receive → Decrypt
     # ==========================================
 
     def send_message(self):
@@ -80,42 +80,37 @@ class SecureChatApp:
         time_str = self._now()
         self.chat_area.add_bubble(plaintext, time_str, is_sent=True)
 
-        # Step 1: Log raw plaintext
-        self.debug_panel.log("Raw Plaintext", plaintext)
+        # Log raw plaintext
+        self.debug_panel.log("━━━ ENCRYPTION PIPELINE ━━━", plaintext)
 
-        # Step 2: AES encrypt the message (Member 2)
-        ciphertext = aes_encrypt(plaintext, self.session_aes_key)
-        self.debug_panel.log("AES Encrypted (Ciphertext)", ciphertext)
+        # Hybrid encrypt with full debug logging
+        envelope = hybrid_encrypt(
+            plaintext, self.my_rsa_public,
+            on_debug=self.debug_panel.log,
+        )
 
-        # Step 3: Wrap the AES key with recipient's RSA public key (Member 3)
-        wrapped_key = wrap_aes_key(self.session_aes_key, self.my_rsa_public)
-        self.debug_panel.log("AES Key wrapped with RSA", wrapped_key)
+        # Transmit over network
+        self.debug_panel.log("📡 Transmitting over TCP Socket...", "[NETWORK WIRE]")
 
-        # Step 4: Transmit over network
-        self.debug_panel.log("Transmitting over TCP Socket...", "[NETWORK WIRE]")
-
-        # TODO: Actually send ciphertext + wrapped_key over your Python Socket.
+        # TODO: Actually send envelope over your Python Socket here.
         # For now, simulate receiving a reply after 1 second.
-        self.root.after(1000, self.simulate_receive, ciphertext, wrapped_key)
+        self.root.after(1000, self.simulate_receive, envelope)
 
-    def simulate_receive(self, incoming_ciphertext, incoming_wrapped_key):
-        """Simulates receiving an encrypted message from the network socket."""
-        self.debug_panel.log("Received from Network (Ciphertext)", incoming_ciphertext)
-        self.debug_panel.log("Received Wrapped AES Key", incoming_wrapped_key)
+    def simulate_receive(self, incoming_envelope):
+        """Simulates receiving an encrypted envelope from the network socket."""
+        self.debug_panel.log("━━━ DECRYPTION PIPELINE ━━━", "Incoming message")
 
         try:
-            # Step 1: Unwrap the AES key with our RSA private key (Member 3)
-            session_key = unwrap_aes_key(incoming_wrapped_key, self.my_rsa_private)
-            self.debug_panel.log("Unwrapped AES Key with RSA", session_key)
-
-            # Step 2: AES decrypt the ciphertext (Member 2)
-            decrypted_text = aes_decrypt(incoming_ciphertext, session_key)
-            self.debug_panel.log("AES Decrypted (Plaintext)", decrypted_text)
+            # Hybrid decrypt with full debug logging
+            decrypted_text = hybrid_decrypt(
+                incoming_envelope, self.my_rsa_private,
+                on_debug=self.debug_panel.log,
+            )
 
             time_str = self._now()
             self.chat_area.add_bubble(decrypted_text, time_str, is_sent=False)
         except Exception as e:
-            self.debug_panel.log("Decryption Failed!", str(e))
+            self.debug_panel.log("❌ Decryption Failed!", str(e))
 
     # ==========================================
     #  Helpers
