@@ -9,9 +9,9 @@
 import tkinter as tk
 from datetime import datetime
 
-from theme import BG_DARK
-from chat_widgets import ChatHeader, ChatArea, InputBar, DebugPanel
-from hybrid_system import generate_rsa_keypair, hybrid_encrypt, hybrid_decrypt
+from ui.theme import BG_DARK
+from ui.chat_widgets import ChatHeader, ChatArea, InputBar, DebugPanel
+from crypto.hybrid_system import generate_rsa_keypair, hybrid_encrypt, hybrid_decrypt
 
 
 class SecureChatApp:

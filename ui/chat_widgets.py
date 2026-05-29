@@ -9,7 +9,7 @@
 import tkinter as tk
 from tkinter import scrolledtext
 
-from theme import (
+from .theme import (
     BG_DARK, BG_HEADER, BG_INPUT_FIELD,
     BG_SENT, BG_RECEIVED, FG_PRIMARY, FG_SECONDARY, FG_INPUT,
     ACCENT_GREEN, BG_DEBUG_PANEL, FG_DEBUG, BG_DATE_SEP, FG_CHECK,
