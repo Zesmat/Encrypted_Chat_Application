@@ -8,6 +8,8 @@
 
 import tkinter as tk
 from tkinter import scrolledtext
+import io
+from PIL import Image, ImageTk
 
 from .theme import (
     BG_DARK, BG_HEADER, BG_INPUT_FIELD,
@@ -30,7 +32,7 @@ class ChatHeader:
                            bg=BG_HEADER, highlightthickness=0)
         avatar.pack(side=tk.LEFT, padx=(12, 8), pady=8)
         avatar.create_oval(2, 2, 38, 38, fill=ACCENT_GREEN, outline="")
-        avatar.create_text(20, 20, text="👤", font=("Segoe UI Emoji", 14))
+        avatar.create_text(20, 20, text="U", font=("Segoe UI", 12, "bold"), fill=FG_PRIMARY)
 
         # Chat name and status
         name_frame = tk.Frame(self.frame, bg=BG_HEADER)
@@ -47,14 +49,14 @@ class ChatHeader:
         btns.pack(side=tk.RIGHT, padx=8)
 
         self.debug_toggle_btn = tk.Button(
-            btns, text="🔒 Debugger",
+            btns, text="[Locked] Debugger",
             font=("Segoe UI", 9), fg=ACCENT_GREEN, bg=BG_HEADER,
             activebackground=BG_HEADER, activeforeground=FG_PRIMARY,
             bd=0, cursor="hand2", command=on_toggle_debugger,
         )
         self.debug_toggle_btn.pack(side=tk.RIGHT, padx=4)
 
-        tk.Label(btns, text="🔍", font=("Segoe UI Emoji", 16),
+        tk.Label(btns, text="Search", font=("Segoe UI", 9, "bold"),
                  fg=FG_SECONDARY, bg=BG_HEADER,
                  cursor="hand2").pack(side=tk.RIGHT, padx=8)
         tk.Label(btns, text="⋮", font=("Segoe UI", 18),
@@ -63,10 +65,10 @@ class ChatHeader:
 
     # ---- helpers used by the app to update the toggle label ----
     def set_debugger_on(self):
-        self.debug_toggle_btn.config(text="🔒 Debugger", fg=ACCENT_GREEN)
+        self.debug_toggle_btn.config(text="[Locked] Debugger", fg=ACCENT_GREEN)
 
     def set_debugger_off(self):
-        self.debug_toggle_btn.config(text="🔓 Debugger", fg=FG_SECONDARY)
+        self.debug_toggle_btn.config(text="[Unlocked] Debugger", fg=FG_SECONDARY)
 
 
 class ChatArea:
@@ -131,6 +133,102 @@ class ChatArea:
 
         self._scroll_to_bottom()
 
+    def add_media_bubble(self, media_type, filename, file_size, data_b64, time_str, is_sent=True, on_open_click=None, pil_img=None):
+        """Render a single chat bubble for media (images, pdfs, audio, video, files)."""
+        bubble_bg = BG_SENT if is_sent else BG_RECEIVED
+        pad = (80, 12) if is_sent else (12, 80)
+
+        wrapper = tk.Frame(self.messages_frame, bg=BG_DARK)
+        wrapper.pack(fill=tk.X, padx=pad, pady=2)
+
+        bubble = tk.Frame(wrapper, bg=bubble_bg, padx=10, pady=8)
+        bubble.pack(side=tk.RIGHT if is_sent else tk.LEFT)
+
+        if media_type == "image":
+            # Display image thumbnail
+            try:
+                if pil_img:
+                    thumbnail_img = pil_img
+                else:
+                    import base64
+                    img_bytes = base64.b64decode(data_b64)
+                    thumbnail_img = Image.open(io.BytesIO(img_bytes))
+                    # Calculate thumbnail size (max 240x180)
+                    thumbnail_img.thumbnail((240, 180))
+                
+                tk_img = ImageTk.PhotoImage(thumbnail_img)
+                
+                # Keep reference to avoid GC
+                if not hasattr(self, "_images"):
+                    self._images = []
+                self._images.append(tk_img)
+                
+                img_label = tk.Label(bubble, image=tk_img, bg=bubble_bg, cursor="hand2")
+                img_label.pack(anchor="w")
+                
+                # Double click or click to open native
+                if on_open_click:
+                    img_label.bind("<Button-1>", lambda _: on_open_click())
+                    
+                # Under the image, show filename
+                tk.Label(bubble, text=filename, font=("Segoe UI", 9, "italic"),
+                         fg=FG_SECONDARY, bg=bubble_bg, wraplength=240, justify=tk.LEFT).pack(anchor="w", pady=(4, 0))
+            except Exception as ex:
+                # Fallback to file card if image loading fails
+                self._render_file_card(bubble, bubble_bg, media_type, filename, file_size, on_open_click)
+        else:
+            self._render_file_card(bubble, bubble_bg, media_type, filename, file_size, on_open_click)
+
+        # Timestamp row
+        ts = tk.Frame(bubble, bg=bubble_bg)
+        ts.pack(anchor="e", pady=(4, 0))
+        tk.Label(ts, text=time_str, font=("Segoe UI", 8),
+                 fg=FG_SECONDARY, bg=bubble_bg).pack(side=tk.LEFT, padx=(0, 4))
+        if is_sent:
+            tk.Label(ts, text="✓✓", font=("Segoe UI", 8),
+                     fg=FG_CHECK, bg=bubble_bg).pack(side=tk.LEFT)
+
+        self._scroll_to_bottom()
+
+    def _render_file_card(self, parent, bg_color, media_type, filename, file_size, on_open_click):
+        card = tk.Frame(parent, bg=bg_color)
+        card.pack(anchor="w")
+
+        # Select icon based on media type
+        icons = {
+            "pdf": "[PDF]",
+            "voice": "[VOICE]",
+            "video": "[VIDEO]",
+            "file": "[FILE]"
+        }
+        icon = icons.get(media_type, "[FILE]")
+
+        # Icon Label
+        icon_lbl = tk.Label(card, text=icon, font=("Segoe UI", 10, "bold"), fg=FG_PRIMARY, bg=bg_color)
+        icon_lbl.pack(side=tk.LEFT, padx=(0, 10))
+
+        # Details frame (name + size)
+        details = tk.Frame(card, bg=bg_color)
+        details.pack(side=tk.LEFT, fill=tk.Y)
+
+        name_lbl = tk.Label(details, text=filename, font=("Segoe UI", 10, "bold"),
+                            fg=FG_PRIMARY, bg=bg_color, wraplength=180, justify=tk.LEFT, anchor="w")
+        name_lbl.pack(anchor="w")
+
+        size_lbl = tk.Label(details, text=file_size, font=("Segoe UI", 8),
+                            fg=FG_SECONDARY, bg=bg_color)
+        size_lbl.pack(anchor="w")
+
+        # Open button
+        btn_text = "Play" if media_type == "voice" else "Open"
+        open_btn = tk.Button(
+            card, text=btn_text, font=("Segoe UI", 9, "bold"),
+            fg=ACCENT_GREEN, bg=bg_color, activebackground=bg_color,
+            activeforeground=FG_PRIMARY, bd=1, relief=tk.GROOVE,
+            padx=8, pady=2, cursor="hand2", command=on_open_click
+        )
+        open_btn.pack(side=tk.RIGHT, padx=(12, 0))
+
     # ---- internal helpers ----
 
     def _scroll_to_bottom(self):
@@ -156,20 +254,23 @@ class InputBar:
 
     PLACEHOLDER = "Type a message"
 
-    def __init__(self, parent, on_send):
+    def __init__(self, parent, on_send, on_attach=None, on_mic=None):
         self.frame = tk.Frame(parent, bg=BG_HEADER, height=56)
         self.frame.pack(fill=tk.X, side=tk.BOTTOM)
         self.frame.pack_propagate(False)
 
         # Emoji
-        tk.Label(self.frame, text="😊", font=("Segoe UI Emoji", 16),
+        tk.Label(self.frame, text="Emoji", font=("Segoe UI", 10, "bold"),
                  fg=FG_SECONDARY, bg=BG_HEADER,
                  cursor="hand2").pack(side=tk.LEFT, padx=(12, 6), pady=10)
 
         # Attachment
-        tk.Label(self.frame, text="📎", font=("Segoe UI Emoji", 16),
+        self.attach_label = tk.Label(self.frame, text="Attach", font=("Segoe UI", 10, "bold"),
                  fg=FG_SECONDARY, bg=BG_HEADER,
-                 cursor="hand2").pack(side=tk.LEFT, padx=(0, 8), pady=10)
+                 cursor="hand2")
+        self.attach_label.pack(side=tk.LEFT, padx=(0, 8), pady=10)
+        if on_attach:
+            self.attach_label.bind("<Button-1>", lambda _: on_attach())
 
         # Text entry
         self.entry = tk.Entry(
@@ -186,9 +287,12 @@ class InputBar:
         self.entry.bind("<Return>", lambda _: on_send())
 
         # Mic
-        tk.Label(self.frame, text="🎙", font=("Segoe UI Emoji", 16),
+        self.mic_label = tk.Label(self.frame, text="Record", font=("Segoe UI", 10, "bold"),
                  fg=FG_SECONDARY, bg=BG_HEADER,
-                 cursor="hand2").pack(side=tk.RIGHT, padx=(8, 12), pady=10)
+                 cursor="hand2")
+        self.mic_label.pack(side=tk.RIGHT, padx=(8, 12), pady=10)
+        if on_mic:
+            self.mic_label.bind("<Button-1>", lambda _: on_mic())
 
     # ---- public API ----
 
@@ -226,8 +330,8 @@ class DebugPanel:
         hdr.pack(fill=tk.X)
         hdr.pack_propagate(False)
 
-        tk.Label(hdr, text="🔐", font=("Segoe UI Emoji", 14),
-                 bg=BG_HEADER).pack(side=tk.LEFT, padx=(12, 6), pady=8)
+        tk.Label(hdr, text="[SECURE]", font=("Segoe UI", 10, "bold"),
+                 fg=ACCENT_GREEN, bg=BG_HEADER).pack(side=tk.LEFT, padx=(12, 6), pady=8)
         tk.Label(hdr, text="Crypto Debugger",
                  font=("Segoe UI", 11, "bold"),
                  fg=FG_PRIMARY, bg=BG_HEADER).pack(side=tk.LEFT, pady=8)

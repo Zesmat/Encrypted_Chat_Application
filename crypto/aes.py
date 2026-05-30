@@ -506,13 +506,13 @@ def aes_encrypt(plain, key):
     plain_bytes = plain.encode()
     padded = pad(plain_bytes)
     blocks = split(padded)
-    ciphertext = b""
+    ciphertext_blocks = []
     for block in blocks:
         pre = pre_encrypt(block, key_bytes)
         rounds_1_9 = aes_rounds_enc(pre)
         final_block = final_round_enc(rounds_1_9)
-        ciphertext += bytes(final_block)
-    return ciphertext
+        ciphertext_blocks.append(bytes(final_block))
+    return b"".join(ciphertext_blocks)
 
 
 def aes_decrypt(ciphertext, key):
@@ -527,7 +527,7 @@ def aes_decrypt(ciphertext, key):
     ciphertext_bytes = bytes.fromhex(ciphertext.replace(" ", ""))
     blocks = split(ciphertext_bytes)
 
-    plaintext = b""
+    plaintext_blocks = []
 
     all_round_keys = []
 
@@ -571,9 +571,9 @@ def aes_decrypt(ciphertext, key):
         for i in range(16):
             block[i] ^= key_bytes[i]
 
-        plaintext += bytes(block)
+        plaintext_blocks.append(bytes(block))
 
-    plaintext = unpad(plaintext)
+    plaintext = unpad(b"".join(plaintext_blocks))
 
     return plaintext.decode()
 
