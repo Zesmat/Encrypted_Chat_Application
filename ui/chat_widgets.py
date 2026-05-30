@@ -260,12 +260,12 @@ class InputBar:
         self.frame.pack_propagate(False)
 
         # Emoji
-        tk.Label(self.frame, text="Emoji", font=("Segoe UI", 10, "bold"),
+        tk.Label(self.frame, text="😊", font=("Segoe UI Emoji", 14),
                  fg=FG_SECONDARY, bg=BG_HEADER,
                  cursor="hand2").pack(side=tk.LEFT, padx=(12, 6), pady=10)
 
         # Attachment
-        self.attach_label = tk.Label(self.frame, text="Attach", font=("Segoe UI", 10, "bold"),
+        self.attach_label = tk.Label(self.frame, text="📎", font=("Segoe UI Emoji", 14),
                  fg=FG_SECONDARY, bg=BG_HEADER,
                  cursor="hand2")
         self.attach_label.pack(side=tk.LEFT, padx=(0, 8), pady=10)
@@ -287,7 +287,7 @@ class InputBar:
         self.entry.bind("<Return>", lambda _: on_send())
 
         # Mic
-        self.mic_label = tk.Label(self.frame, text="Record", font=("Segoe UI", 10, "bold"),
+        self.mic_label = tk.Label(self.frame, text="🎤", font=("Segoe UI Emoji", 14),
                  fg=FG_SECONDARY, bg=BG_HEADER,
                  cursor="hand2")
         self.mic_label.pack(side=tk.RIGHT, padx=(8, 12), pady=10)
