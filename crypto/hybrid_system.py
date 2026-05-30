@@ -1,6 +1,7 @@
 import os
 from . import aes
 from . import rsa
+import base64
 
 # HYBRID WRAPPER (THE CRYPTOGRAPHIC ENVELOPE)
 
@@ -16,26 +17,21 @@ def hybrid_encrypt(message_string, recipient_pub_key, on_debug=None):
     
     _log = on_debug if on_debug else lambda s, d="": None
 
-    # 1. Setup Session Key
     session_key_bytes = generate_aes_key()
     session_key_hex = session_key_bytes.hex()
     _log("[AES] Generated 128-bit Session Key", session_key_hex)
 
-    # 2. Encrypt the message text
-    # aes_encrypt takes the string directly and returns ciphertext bytes
+
     aes_ciphertext_bytes = aes.aes_encrypt(message_string, session_key_hex)
     _log("[AES-ECB] Encrypted Plaintext -> Ciphertext",
          f"{len(aes_ciphertext_bytes)} bytes (PKCS#7 padded)")
 
-    # 3. Encode to safe Base64 strings for network transfer
-    import base64
+
     encoded_ciphertext = base64.b64encode(aes_ciphertext_bytes).decode("utf-8")
     _log("[BASE64] Encoded Ciphertext for Network",
          encoded_ciphertext[:60] + "..." if len(encoded_ciphertext) > 60
          else encoded_ciphertext)
 
-    # 4. RSA Encrypt the Session Key
-    # rsa.encrypt takes the bytes directly
     e, n = recipient_pub_key
     _log("[RSA] Encrypting Session Key with Public Key",
          f"e={e}, n={str(n)[:40]}...")
@@ -45,10 +41,9 @@ def hybrid_encrypt(message_string, recipient_pub_key, on_debug=None):
          if len(str(encrypted_session_key)) > 60
          else str(encrypted_session_key))
 
-    # 5. Create the transmission bundle
     envelope = {
-        "rsa_encrypted_key": encrypted_session_key, # Integer
-        "aes_ciphertext_b64": encoded_ciphertext    # String
+        "rsa_encrypted_key": encrypted_session_key,
+        "aes_ciphertext_b64": encoded_ciphertext  
     }
 
     _log("[ENVELOPE] Bundle Ready for Transmission",
@@ -73,22 +68,17 @@ def hybrid_decrypt(envelope, recipient_priv_key, on_debug=None):
          f"ciphertext_len={len(encoded_ciphertext)}, "
          f"rsa_key_len={len(str(encrypted_session_key))}")
 
-    # 1. RSA Decrypt the Session Key
     _log("[RSA] Decrypting Session Key with Private Key", "d=***, n=***")
     session_key_bytes = rsa.decrypt(encrypted_session_key, recipient_priv_key)
     session_key_hex = session_key_bytes.hex()
     _log("[RSA] Recovered AES Session Key", session_key_hex)
 
-    # 2 & 3. AES Decrypt
-    import base64
     _log("[AES-ECB] Decrypting Ciphertext...",
          encoded_ciphertext[:60] + "..." if len(encoded_ciphertext) > 60
          else encoded_ciphertext)
          
-    # Decode string back to raw bytes (Base64)
     ciphertext_bytes = base64.b64decode(encoded_ciphertext)
         
-    # Convert ciphertext bytes back to a hex string for our custom scratch AES engine
     ciphertext_hex = ciphertext_bytes.hex()
     
     plaintext_string = aes.aes_decrypt(ciphertext_hex, session_key_hex)
