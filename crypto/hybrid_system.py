@@ -1,10 +1,3 @@
-"""
-This module handles:
-1. Block Cipher Mode (ECB) integration using Member 2's AES implementation.
-2. Padding (PKCS#7) handled internally by AES.
-3. Hybrid Cryptographic Envelope (bundling RSA + AES + Encodings).
-4. Added logs inside the hybrid system to help in debugging and visualizing the hybrid encryption and decryption process.
-"""
 import os
 from . import aes
 from . import rsa
@@ -12,24 +5,15 @@ from . import rsa
 # HYBRID WRAPPER (THE CRYPTOGRAPHIC ENVELOPE)
 
 def generate_rsa_keypair(bits=512):
-    """Generates an RSA keypair using Member 1's implementation."""
+
     return rsa.generate_keys(bits)
 
 def generate_aes_key():
-    """Generates a random 16-byte (128-bit) session key using the OS CSPRNG."""
+
     return os.urandom(16)
 
 def hybrid_encrypt(message_string, recipient_pub_key, on_debug=None):
-    """
-    The full encryption workflow.
-    1. Generate AES key.
-    2. Encrypt the chat message text with AES (ECB mode).
-    3. Encode the AES ciphertext into Hexadecimal text so it's network-safe.
-    4. Encrypt the raw AES session key with the recipient's RSA public key.
-    5. Return the bundle.
-
-    on_debug(step, data) — optional callback for logging each step.
-    """
+    
     _log = on_debug if on_debug else lambda s, d="": None
 
     # 1. Setup Session Key
@@ -74,14 +58,7 @@ def hybrid_encrypt(message_string, recipient_pub_key, on_debug=None):
     return envelope
 
 def hybrid_decrypt(envelope, recipient_priv_key, on_debug=None):
-    """
-    The full decryption workflow.
-    1. Use RSA private key to decrypt the session key.
-    2. Decrypt the ciphertext using AES (ECB mode).
-    3. Return the original message string.
 
-    on_debug(step, data) — optional callback for logging each step.
-    """
     _log = on_debug if on_debug else lambda s, d="": None
 
     encrypted_session_key = envelope["rsa_encrypted_key"]
