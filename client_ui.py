@@ -5,8 +5,23 @@
 #  All UI widget construction lives in chat_widgets.py
 #  Crypto: rsa.py, aes.py, hybrid_system.py, encoding.py
 
-
-
+#AI usuage:
+#Where:
+#Used in creating UI interface using tkinter (chat_widgets.py)
+#Why:
+# Used in organizing the UI widgets to make it working properly
+# and to make the code more readable and easy to modify in the future
+#How:
+#By separating the UI widgets from the main application logic
+# and creating a separate class for each widget
+#Modified Content:
+#The theme of the UI
+#my understanding: 
+# okay so at the first of implementiing UI, i did start as on single script then i decided to refactor the ui into three like colors, widgets, crypto files(dummy one) and the another file for combining all into single workflow, so i told  AI to implement these, then the real crypto data came and i told AI to embed them into 
+# client_ui.py
+# then I added the rsa key generator in 
+# hybrid_system.py
+#  to make all the things related to crytpo in one file called by the client ui. then i told AI to separate the crypto files and UI related files into to directories for organization.
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from datetime import datetime
@@ -290,7 +305,7 @@ class SecureChatApp:
                 self.debug_panel.log("[LIVE RECORDING]", "Voice recording started... Click Record again to stop and send.")
                 
                 # Update UI elements to show recording state
-                self.input_bar.mic_label.config(text="REC", fg="red")
+                self.input_bar.mic_label.config(text="🔴", fg="red")
                 self.input_bar.entry.delete(0, tk.END)
                 self.input_bar.entry.insert(0, "[RECORDING VOICE NOTE... Click mic again to send]")
                 self.input_bar.entry.config(fg="red", state="disabled")
@@ -315,7 +330,7 @@ class SecureChatApp:
                 self.debug_panel.log("[LIVE RECORDING]", "Recording stopped. Encoding and encrypting WAV payload...")
                 
                 # Revert UI state
-                self.input_bar.mic_label.config(text="Record", fg="#8696a0") # FG_SECONDARY
+                self.input_bar.mic_label.config(text="🎤", fg="#8696a0") # FG_SECONDARY
                 self.input_bar.entry.config(state="normal", fg="#d1d7db") # FG_INPUT
                 self.input_bar.entry.delete(0, tk.END)
                 self.input_bar.entry.insert(0, self.input_bar.PLACEHOLDER)
